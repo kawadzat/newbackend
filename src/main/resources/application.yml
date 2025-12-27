@@ -1,0 +1,78 @@
+jwt:
+  secret: mysupercomplexsecret
+server:
+  error:
+    whitelabel:
+      enabled: false
+  port: 8080
+spring:
+#  profiles:
+#    active: dev
+  datasource:
+    url: jdbc:mysql://localhost:3306/securecapita
+    password:
+    username: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    initialization-mode: never
+    hikari:
+      connection-timeout: 30000
+      validation-timeout: 5000
+      maximum-pool-size: 10
+      minimum-idle: 2
+      idle-timeout: 300000
+      max-lifetime: 1800000
+      leak-detection-threshold: 60000
+      connection-test-query: SELECT 1
+  jpa:
+    database-platform: org.hibernate.dialect.MySQLDialect
+    generate-ddl: true
+    show-sql: true
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        globally_quoted_indentifiers: true
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+        jakarta:
+          persistence:
+            sharedCache:
+              mode: ENABLE_SELECTIVE
+    spring:
+      servlet:
+        multipart:
+          enabled: true
+          file-size-threshold: 2KB
+          max-file-size: 200MB
+          max-request-size: 215MB
+  sql:
+    init:
+      mode: never
+      continue-on-error: false
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: javaspringboot7@gmail.com
+    password: gpceghqgktqlvfye
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+swagger:
+  api:
+    title: SecureCapital
+    description: API for Secure Capital
+    version: 0.9
+    termsOfServiceUrl: google.com
+    contact:
+      name: Your Contact Name Here
+      url: Your Contact URL Here
+
+frontend:
+  url: https://processmanagement.tanawellnesscoaching.com
+  resetUrl: /user/verify/password
+
