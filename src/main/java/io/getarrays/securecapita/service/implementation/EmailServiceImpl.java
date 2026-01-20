@@ -32,6 +32,7 @@ public class EmailServiceImpl implements EmailService {
     @Override
     public void sendVerificationEmail(String firstName, String email, String key, String verificationUrl, VerificationType verificationType) {
         try {
+            log.info("Preparing to send verification email to: {} with URL: {}", email, verificationUrl);
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true); // true to set content type to HTML
 
@@ -44,9 +45,10 @@ public class EmailServiceImpl implements EmailService {
             helper.setSubject(String.format("JSC - %s Verification Email", StringUtils.capitalize(verificationType.getType())));
 
             mailSender.send(message);
-            log.info("Email sent to {}", firstName);
+            log.info("Email sent successfully to: {} ({})", email, firstName);
         } catch (Exception exception) {
-            log.error(exception.getMessage());
+            log.error("Error sending email to: {}. Error message: {}", email, exception.getMessage(), exception);
+            throw new RuntimeException("Failed to send email: " + exception.getMessage(), exception);
         }
     }
 

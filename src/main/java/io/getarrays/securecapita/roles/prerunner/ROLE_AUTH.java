@@ -19,8 +19,7 @@ public enum ROLE_AUTH {
     REQUEST_MOVE_ASSET,
     CREATE_1,
     APPROVE_MOVE_ASSET,
-    CREATE_LINE,
-    VIEW_LINE,
+
     CREATE_MAILLIST  ;
 
 }

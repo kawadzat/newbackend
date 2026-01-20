@@ -28,6 +28,25 @@ public class StationPreRunner implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
+        System.out.println("========================================");
+        System.out.println("StationPreRunner: Starting initialization");
+        System.out.println("========================================");
+        try {
+            initializeProvinces();
+            initializeStations();
+            System.out.println("========================================");
+            System.out.println("StationPreRunner: Initialization completed successfully");
+            System.out.println("========================================");
+        } catch (Exception e) {
+            System.err.println("========================================");
+            System.err.println("ERROR in StationPreRunner: " + e.getMessage());
+            System.err.println("========================================");
+            e.printStackTrace();
+        }
+    }
+
+    private void initializeProvinces() {
+        System.out.println("StationPreRunner: Initializing provinces...");
         List<Province> provinces = new ArrayList<>(List.of(Province.builder()
                         .id(1L)
                         .name("MASHOLAND WEST")
@@ -65,7 +84,25 @@ public class StationPreRunner implements CommandLineRunner {
                         .name("SUPERIOR COURTS")
                         .build()));
 
-        List<Province> provinceList = provinceEntityRepo.saveAll(provinces);
+        // Only save provinces that don't exist
+        List<Province> provincesToSave = new ArrayList<>();
+        for (Province province : provinces) {
+            if (!provinceEntityRepo.existsById(province.getId())) {
+                provincesToSave.add(province);
+            }
+        }
+        if (!provincesToSave.isEmpty()) {
+            provinceEntityRepo.saveAll(provincesToSave);
+            System.out.println("StationPreRunner: Saved " + provincesToSave.size() + " new provinces");
+        } else {
+            System.out.println("StationPreRunner: All provinces already exist");
+        }
+    }
+
+    private void initializeStations() {
+        System.out.println("StationPreRunner: Initializing stations...");
+        List<Province> provinceList = provinceEntityRepo.findAll();
+        System.out.println("StationPreRunner: Found " + provinceList.size() + " provinces in database");
 
         ArrayList<Station> stationArrayList = new ArrayList<>();
         stationArrayList.add(Station.builder().station_id(1L).province(getProvince(provinceList,6L)).stationName("CHIVHU_MAG_COURT").build());
@@ -222,7 +259,33 @@ public class StationPreRunner implements CommandLineRunner {
 
 
 
-        stationRepository.saveAll(stationArrayList);
+        System.out.println("StationPreRunner: Prepared " + stationArrayList.size() + " stations to check");
+        
+        // Only save stations that don't exist
+        List<Station> stationsToSave = new ArrayList<>();
+        for (Station station : stationArrayList) {
+            if (!stationRepository.existsById(station.getStation_id())) {
+                stationsToSave.add(station);
+            }
+        }
+        
+        System.out.println("StationPreRunner: Found " + stationsToSave.size() + " new stations to save");
+        
+        if (!stationsToSave.isEmpty()) {
+            try {
+                stationRepository.saveAll(stationsToSave);
+                System.out.println("StationPreRunner: Successfully initialized " + stationsToSave.size() + " stations");
+            } catch (Exception e) {
+                System.err.println("StationPreRunner: Error saving stations: " + e.getMessage());
+                e.printStackTrace();
+            }
+        } else {
+            System.out.println("StationPreRunner: All stations already exist in database");
+        }
+        
+        // Verify stations were saved
+        long totalStations = stationRepository.findAll().size();
+        System.out.println("StationPreRunner: Total stations in database: " + totalStations);
     }
 
     private Province getProvince(List<Province> provinces,Long id){

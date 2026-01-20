@@ -49,4 +49,10 @@ public interface UserRepository1 extends JpaRepository<User, Long> {
             "AND (:currentUserId is null OR u.id <> :currentUserId)")
     List<User> findByDepartmentIdAndStationIdIn(Long currentUserId, List<Long> departmentIds, List<Long> stationIds);
 
+    @Query("SELECT u FROM User u " +
+            "JOIN u.roles ur " +
+            "JOIN ur.role r " +
+            "WHERE r.name IN :roleNames")
+    List<User> findByRoleNameIn(List<String> roleNames);
+
 }

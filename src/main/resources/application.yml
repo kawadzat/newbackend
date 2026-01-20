@@ -9,7 +9,7 @@ spring:
 #  profiles:
 #    active: dev
   datasource:
-    url: jdbc:mysql://localhost:3306/securecapita
+    url: jdbc:mysql://localhost:3306/securecapita?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&tmpdir=C:/xampp/tmp
     password:
     username: root
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -73,6 +73,6 @@ swagger:
       url: Your Contact URL Here
 
 frontend:
-  url: https://processmanagement.tanawellnesscoaching.com
+  url: http://localhost:4200
   resetUrl: /user/verify/password
 

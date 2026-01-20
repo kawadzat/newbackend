@@ -1,7 +1,7 @@
 package io.getarrays.securecapita.antivirus;
 
-import io.getarrays.securecapita.itinventory.Laptop;
 import io.getarrays.securecapita.itinventory.LaptopRepository;
+import io.getarrays.securecapita.licence.LicenseWithLaptopInfoDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,45 +17,53 @@ public class AntivirusServiceImpl implements AntivirusService {
     private final LaptopRepository laptopRepository;
 
     @Override
+    public AntivirusDto create(AntivirusDto antivirusDto) {
+        return null;
+    }
+
+    @Override
+    public AntivirusDto update(Long id, AntivirusDto antivirusDto) {
+        return null;
+    }
+
+    @Override
+    public AntivirusDto getById(Long id) {
+        return null;
+    }
+
+    @Override
+    public List<AntivirusDto> getAll() {
+        return List.of();
+    }
+
+    @Override
+    public void delete(Long id) {
+
+    }
+
+    @Override
     public Antivirus addAntivirusToLaptop(Long laptopId, Antivirus antivirus) {
-        // Check if laptop exists
-        Laptop laptop = laptopRepository.findById(laptopId)
-                .orElseThrow(() -> new IllegalArgumentException("Laptop not found with id: " + laptopId));
-
-        // Check if antivirus with the same key already exists for this laptop
-        if (antivirusRepository.existsByKeyAndLaptopId(antivirus.getKey(), laptopId)) {
-            throw new IllegalArgumentException("This antivirus is already added to this laptop. Antivirus key must be unique per laptop.");
-        }
-
-        // Check if antivirus with the same key exists globally (since key is unique)
-        if (antivirusRepository.existsByKey(antivirus.getKey())) {
-            throw new IllegalArgumentException("An antivirus with this key already exists. Antivirus key must be unique.");
-        }
-
-        // Set the laptop relationship and default values
-        antivirus.setLaptop(laptop);
-        if (antivirus.getIsInstalled() == null) {
-            antivirus.setIsInstalled(true);
-        }
-        if (antivirus.getStatus() == null) {
-            antivirus.setStatus(AntivirusStatus.ACTIVE);
-        }
-
-        return antivirusRepository.save(antivirus);
+        return null;
     }
 
     @Override
-    public List<Antivirus> getAntivirusByLaptop(Long laptopId) {
-        // Check if laptop exists
-        if (!laptopRepository.existsById(laptopId)) {
-            throw new IllegalArgumentException("Laptop not found with id: " + laptopId);
-        }
-        return antivirusRepository.findByLaptopId(laptopId);
+    public AntivirusDto addAntivirusToLaptop(Long laptopId, AntivirusDto antivirusDto) {
+        return null;
     }
 
     @Override
-    public List<Antivirus> getAll() {
-        return antivirusRepository.findAll();
+    public List<AntivirusDto> getAntivirusByLaptop(Long laptopId) {
+        return List.of();
+    }
+
+    @Override
+    public void removeAntivirusFromLaptop(Long laptopId, Long antivirusId) {
+
+    }
+
+    @Override
+    public List<LicenseWithLaptopInfoDto> getAllWithDetailedLaptopInfo() {
+        return List.of();
     }
 
 //    @Override

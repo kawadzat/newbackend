@@ -91,7 +91,19 @@ public class UserRepositoryImpl implements UserRepository<User>, UserDetailsServ
 
 
     private void sendEmail(String firstName, String email, String verificationUrl, String verificationKey, VerificationType verificationType) {
-        CompletableFuture.runAsync(() -> emailService.sendVerificationEmail(firstName, email, verificationKey,verificationUrl, verificationType));
+        log.info("Attempting to send email to: {} with URL: {}", email, verificationUrl);
+        CompletableFuture.runAsync(() -> {
+            try {
+                emailService.sendVerificationEmail(firstName, email, verificationKey, verificationUrl, verificationType);
+                log.info("Password reset email sent successfully to: {}", email);
+            } catch (Exception exception) {
+                log.error("Failed to send password reset email to: {}. Error: {}", email, exception.getMessage(), exception);
+                throw new RuntimeException("Email sending failed", exception);
+            }
+        }).exceptionally(ex -> {
+            log.error("Exception in async email sending: {}", ex.getMessage(), ex);
+            return null;
+        });
 
 //        CompletableFuture.runAsync(() -> {
 //            try {
@@ -305,14 +317,20 @@ public class UserRepositoryImpl implements UserRepository<User>, UserDetailsServ
 
     @Override
     public User verifyPasswordKey(String key) {
-        if(isLinkExpired(key, PASSWORD)) throw new ApiException("This link has expired. Please reset your password again.");
         try {
-            User user = jdbc.queryForObject(SELECT_USER_BY_PASSWORD_URL_QUERY, of("url", getVerificationUrl(key, PASSWORD.getType())), new UserRowMapper());
-            //jdbc.update("DELETE_USER_FROM_PASSWORD_VERIFICATION_QUERY", of("id", user.getId())); //Depends on use case / developer or business
+            // Look up user by verification token stored in User entity
+            Optional<User> userOptional = userRepository1.findByPasswordVerificationToken(key);
+            if (userOptional.isEmpty()) {
+                throw new ApiException("This link is not valid. Please reset your password again.");
+            }
+            User user = userOptional.get();
+            // Check if token has expired
+            if (user.getVerificationTokenExpiry() != null && user.getVerificationTokenExpiry().before(new Timestamp(System.currentTimeMillis()))) {
+                throw new ApiException("This link has expired. Please reset your password again.");
+            }
             return user;
-        } catch (EmptyResultDataAccessException exception) {
-            log.error(exception.getMessage());
-            throw new ApiException("This link is not valid. Please reset your password again.");
+        } catch (ApiException e) {
+            throw e;
         } catch (Exception exception) {
             log.error(exception.getMessage());
             throw new ApiException("An error occurred. Please try again.");
@@ -323,8 +341,24 @@ public class UserRepositoryImpl implements UserRepository<User>, UserDetailsServ
     public void renewPassword(String key, String password, String confirmPassword) {
         if(!password.equals(confirmPassword)) throw new ApiException("Passwords don't match. Please try again.");
         try {
-            jdbc.update(UPDATE_USER_PASSWORD_BY_URL_QUERY, of("password", encoder.encode(password), "url", getVerificationUrl(key, PASSWORD.getType())));
-            jdbc.update(DELETE_VERIFICATION_BY_URL_QUERY, of("url", getVerificationUrl(key, PASSWORD.getType())));
+            // Find user by verification token
+            Optional<User> userOptional = userRepository1.findByPasswordVerificationToken(key);
+            if (userOptional.isEmpty()) {
+                throw new ApiException("This link is not valid. Please reset your password again.");
+            }
+            User user = userOptional.get();
+            // Check if token has expired
+            if (user.getVerificationTokenExpiry() != null && user.getVerificationTokenExpiry().before(new Timestamp(System.currentTimeMillis()))) {
+                throw new ApiException("This link has expired. Please reset your password again.");
+            }
+            // Update password
+            user.setPassword(encoder.encode(password));
+            // Clear verification token after successful password reset
+            user.setVerificationToken(null);
+            user.setVerificationTokenExpiry(null);
+            userRepository1.save(user);
+        } catch (ApiException e) {
+            throw e;
         } catch (Exception exception) {
             log.error(exception.getMessage());
             throw new ApiException("An error occurred. Please try again.");

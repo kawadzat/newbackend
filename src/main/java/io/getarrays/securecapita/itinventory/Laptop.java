@@ -3,6 +3,7 @@ package io.getarrays.securecapita.itinventory;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.getarrays.securecapita.domain.User;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 import java.util.Date;
@@ -17,6 +18,7 @@ import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_DEFAULT;
 @Builder
 @Entity
 @NoArgsConstructor
+@org.hibernate.annotations.DynamicUpdate
 @NamedEntityGraph(name = "laptop-entity-graph")
 @Table(name = "`laptop`")
 public class Laptop {
@@ -33,7 +35,7 @@ public class Laptop {
 
     private Date replacementDate;
 
-    @Column(nullable = true)
+    @NotNull
     private String serialNumber;
 
     private String manufacturer;
@@ -41,6 +43,9 @@ public class Laptop {
     private String model;
 
     private Integer ram;
+
+    @Column(name = "AssetType")
+    private String  	AssetType;
 
     private Integer processor;
 
@@ -50,7 +55,11 @@ public class Laptop {
 
     private String email;
 
+    @Column(name = "department")
     private String department;
+
+    @Column(name = "station")
+    private String station;
 
     private String designation;
 

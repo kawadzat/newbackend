@@ -144,7 +144,12 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public ResponseEntity<?> changeRole(Long userId, String role) {
         System.out.println(role);
-        Optional<Role> roleOptional = roleRepository1.findByRoleName(role);
+        // Trim the role name to handle any whitespace issues
+        String trimmedRole = role != null ? role.trim() : null;
+        if (trimmedRole == null || trimmedRole.isEmpty()) {
+            return ResponseEntity.badRequest().body(new CustomMessage("Role is invalid."));
+        }
+        Optional<Role> roleOptional = roleRepository1.findByRoleName(trimmedRole);
         if (roleOptional.isEmpty()) {
             return ResponseEntity.badRequest().body(new CustomMessage("Role is invalid."));
         }
@@ -233,9 +238,15 @@ public class UserServiceImpl implements UserService {
         if(resetPassword.getConfirmPassword().equals(resetPassword.getPassword())){
             Optional<User> userOptional=userRepository1.findByPasswordVerificationToken(resetPassword.getToken());
             if(userOptional.isPresent()){
-                userOptional.get().setPassword(passwordEncoder.encode(resetPassword.getPassword()));
-                userOptional.get().setVerificationToken(null);
-                userRepository1.save(userOptional.get());
+                User user = userOptional.get();
+                // Check if token has expired
+                if (user.getVerificationTokenExpiry() != null && user.getVerificationTokenExpiry().before(new java.sql.Timestamp(System.currentTimeMillis()))) {
+                    return ResponseEntity.badRequest().body(new CustomMessage("This link has expired. Please reset your password again."));
+                }
+                user.setPassword(passwordEncoder.encode(resetPassword.getPassword()));
+                user.setVerificationToken(null);
+                user.setVerificationTokenExpiry(null);
+                userRepository1.save(user);
                 return ResponseEntity.ok(new CustomMessage("Password changed, you can login."));
             }
             return ResponseEntity.badRequest().body(new CustomMessage("Your token is not valid."));

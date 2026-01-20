@@ -51,8 +51,10 @@ public class StationController {
 
 
     @GetMapping("/getAll")
-    public ResponseEntity<?> getAllStations() {
-        return stationService.getAllStations();
+    public ResponseEntity<?> getAllStations(
+            @RequestParam(name = "userId", required = false) Long userId,
+            @RequestParam(name = "all", required = false, defaultValue = "false") boolean all) {
+        return stationService.getAllStations(userId, all);
     }
 
 

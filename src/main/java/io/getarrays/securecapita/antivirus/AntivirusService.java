@@ -1,20 +1,31 @@
 package io.getarrays.securecapita.antivirus;
 
+import io.getarrays.securecapita.licence.LicenseWithLaptopInfoDto;
+
 import java.util.List;
 
 public interface AntivirusService {
+    AntivirusDto create(AntivirusDto antivirusDto);
+    AntivirusDto update(Long id, AntivirusDto antivirusDto);
+    AntivirusDto getById(Long id);
+    List<AntivirusDto> getAll();
+    void delete(Long id);
     Antivirus addAntivirusToLaptop(Long laptopId, Antivirus antivirus);
-    List<Antivirus> getAntivirusByLaptop(Long laptopId);
-    List<Antivirus> getAll();
+    AntivirusDto addAntivirusToLaptop(Long laptopId, AntivirusDto antivirusDto);
+    List<AntivirusDto> getAntivirusByLaptop(Long laptopId);
+    void removeAntivirusFromLaptop(Long laptopId, Long antivirusId);
+    List<LicenseWithLaptopInfoDto> getAllWithDetailedLaptopInfo();
     // Basic CRUD operations
 //    Antivirus create(Antivirus antivirus);
 //    Antivirus update(Antivirus antivirus);
 //    Antivirus getById(Long id);
 //    Antivirus getByKey(String key);
+//    List<Antivirus> getAll();
 //    void delete(Long id);
 //    
 //    // Laptop-related methods
 //    Antivirus addAntivirusToLaptop(Long laptopId, Antivirus antivirus);
+//    List<Antivirus> getAntivirusByLaptop(Long laptopId);
 //    void removeAntivirusFromLaptop(Long laptopId, Long antivirusId);
 //    Antivirus updateAntivirusOnLaptop(Long laptopId, Antivirus antivirus);
 //    

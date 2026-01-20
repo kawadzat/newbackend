@@ -1,13 +1,11 @@
 package io.getarrays.securecapita.roles;
 
-import com.twilio.http.Response;
-import io.getarrays.securecapita.domain.Role;
-import io.getarrays.securecapita.repository.RoleRepository;
 import io.getarrays.securecapita.repository.implementation.RoleRepository1;
 import io.getarrays.securecapita.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -23,7 +21,7 @@ public class RolesController {
         return ResponseEntity.ok(roleRepository1.findAll());
     }
 
-    @GetMapping("/update")
+    @PutMapping("/update")
     public ResponseEntity<?> updateRole(@RequestParam("userId") Long userId,@RequestParam("role") String role){
         return userService.changeRole(userId,role);
     }

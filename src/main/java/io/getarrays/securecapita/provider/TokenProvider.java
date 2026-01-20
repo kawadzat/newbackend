@@ -78,6 +78,24 @@ public class TokenProvider {
         }
     }
 
+    /**
+     * Decode token without verification to extract user ID even from expired/invalid tokens
+     * This allows us to get the user ID for logging/identification purposes
+     */
+    public Long getSubjectWithoutVerification(String token) {
+        try {
+            // Decode without verification - this works even for expired tokens
+            String subject = JWT.decode(token).getSubject();
+            if (subject != null && !subject.isEmpty()) {
+                return Long.valueOf(subject);
+            }
+            return null;
+        } catch (Exception e) {
+            // If decoding fails completely, return null
+            return null;
+        }
+    }
+
     public List<GrantedAuthority>getAuthorities(String token) {
         String[] claims = getClaimsFromToken(token);
         return stream(claims).map(SimpleGrantedAuthority::new).collect(toList());

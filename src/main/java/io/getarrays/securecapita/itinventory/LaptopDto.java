@@ -2,7 +2,6 @@ package io.getarrays.securecapita.itinventory;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.getarrays.securecapita.dto.UserDTO;
-import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -30,10 +29,27 @@ public class LaptopDto {
 
     private String serialNumber;
 
-    @NotBlank(message = "Manufacturer is required")
     private String manufacturer;
 
-    private String model; // Optional field
+    private String model;
+
+    private Long manufacturerModel; // ID of the laptop model to copy manufacturer/model from
+    
+    // Custom setter to handle manufacturerModel as string or number
+    @com.fasterxml.jackson.annotation.JsonSetter("manufacturerModel")
+    public void setManufacturerModelFromJson(Object value) {
+        if (value == null) {
+            this.manufacturerModel = null;
+        } else if (value instanceof String) {
+            try {
+                this.manufacturerModel = Long.parseLong((String) value);
+            } catch (NumberFormatException e) {
+                this.manufacturerModel = null;
+            }
+        } else if (value instanceof Number) {
+            this.manufacturerModel = ((Number) value).longValue();
+        }
+    }
 
     private Integer ram;
 
@@ -41,13 +57,20 @@ public class LaptopDto {
 
     private String status;
 
+    @com.fasterxml.jackson.annotation.JsonProperty("assertType")
+    private String AssetType;
+
     private String issuedTo;
 
     private String email;
 
     private String department;
 
+    private String station;
+
     private String designation;
+
+    private Date purchaseDate; // For purchaseDate from frontend
 
     private UserDTO issuedByUser;
 

@@ -7,6 +7,8 @@ import io.getarrays.securecapita.asserts.model.StationsStatDto;
 import io.getarrays.securecapita.asserts.repo.AssertEntityRepository;
 import io.getarrays.securecapita.asserts.repo.StationRepository;
 import io.getarrays.securecapita.domain.User;
+import io.getarrays.securecapita.stationsassignment.UserStation;
+import io.getarrays.securecapita.stationsassignment.UserStationRepo;
 import io.getarrays.securecapita.dto.StationItemStat;
 import io.getarrays.securecapita.dto.StationStats;
 import io.getarrays.securecapita.dto.UserDTO;
@@ -21,6 +23,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.util.*;
 import java.util.Arrays;
@@ -33,6 +37,7 @@ public class StationService {
     private final UserRepository1 userRepository1;
     private final AssertEntityRepository assertRepository;
     private final AssertService assertService;
+    private final UserStationRepo userStationRepo;
 
     /* to create user */
     public Station createStation(Station newStation) {
@@ -81,52 +86,186 @@ public class StationService {
         return ResponseEntity.ok("Added Assert to Station");
     }
 
-    public ResponseEntity<?> getAllStations() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        
-        // Handle public access (no authentication) - return all stations
-        if (authentication == null || authentication.getName().equals("anonymousUser") || 
-            authentication.getAuthorities() == null || authentication.getAuthorities().isEmpty()) {
-            List<Station> stations = stationRepository.findAll();
+    public ResponseEntity<?> getAllStations(Long userIdParam, boolean all) {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            List<Station> stations;
+            
+            System.out.println("getAllStations called with userIdParam: " + userIdParam + ", all: " + all);
+            
+            // If all=true is explicitly requested, return all stations (for Profile component)
+            if (all) {
+                stations = stationRepository.findAll();
+                System.out.println("'all=true' parameter provided - returning ALL stations (" + stations.size() + " stations)");
+            } else {
+                Long userId = userIdParam;
+                
+                // If userIdParam is not provided, try to get it from authentication (for laptop form dropdown)
+                if (userId == null) {
+                    try {
+                        System.out.println("Attempting to get userId from authentication. Authentication object: " + (authentication != null ? "exists" : "null"));
+                        if (authentication != null) {
+                            System.out.println("Authentication isAuthenticated: " + authentication.isAuthenticated());
+                            System.out.println("Authentication principal type: " + (authentication.getPrincipal() != null ? authentication.getPrincipal().getClass().getName() : "null"));
+                            
+                            if (authentication.isAuthenticated()) {
+                                Object principal = authentication.getPrincipal();
+                                
+                                // Try UserDTO first (most common case)
+                                if (principal instanceof UserDTO) {
+                                    userId = ((UserDTO) principal).getId();
+                                    System.out.println("SUCCESS: Got userId from UserDTO: " + userId);
+                                } 
+                                // Try User domain object as fallback
+                                else if (principal instanceof User) {
+                                    userId = ((User) principal).getId();
+                                    System.out.println("SUCCESS: Got userId from User: " + userId);
+                                } 
+                                // Try to extract from UserPrincipal if it exists
+                                else if (principal instanceof io.getarrays.securecapita.domain.UserPrincipal) {
+                                    userId = ((io.getarrays.securecapita.domain.UserPrincipal) principal).getUser().getId();
+                                    System.out.println("SUCCESS: Got userId from UserPrincipal: " + userId);
+                                }
+                                else {
+                                    System.out.println("WARNING: Principal is not a recognized type, cannot extract userId. Principal type: " + principal.getClass().getName());
+                                    System.out.println("Principal toString: " + principal.toString());
+                                }
+                                
+                                if (userId != null) {
+                                    System.out.println("SUCCESS: No userIdParam provided, but got userId from authentication: " + userId);
+                                }
+                            } else {
+                                System.out.println("WARNING: Authentication exists but is not authenticated");
+                            }
+                        } else {
+                            System.out.println("WARNING: No authentication object available in SecurityContext");
+                            System.out.println("This usually means:");
+                            System.out.println("  1. No token was sent in the request");
+                            System.out.println("  2. Token was invalid/expired and context was cleared");
+                            System.out.println("  3. Token validation failed");
+                            
+                            // Try to get userId from request attribute (set by filter even if auth failed)
+                            try {
+                                ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+                                if (attributes != null) {
+                                    Object userIdAttr = attributes.getRequest().getAttribute("userId");
+                                    if (userIdAttr != null && userIdAttr instanceof Long) {
+                                        userId = (Long) userIdAttr;
+                                        System.out.println("SUCCESS: Got userId from request attribute (extracted from token even though auth failed): " + userId);
+                                    }
+                                }
+                            } catch (Exception reqEx) {
+                                System.out.println("Could not get userId from request attribute: " + reqEx.getMessage());
+                            }
+                        }
+                    } catch (Exception e) {
+                        System.out.println("ERROR: Could not get userId from authentication: " + e.getMessage());
+                        e.printStackTrace();
+                        
+                        // Fallback: Try to get userId from request attribute
+                        try {
+                            ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+                            if (attributes != null) {
+                                Object userIdAttr = attributes.getRequest().getAttribute("userId");
+                                if (userIdAttr != null && userIdAttr instanceof Long) {
+                                    userId = (Long) userIdAttr;
+                                    System.out.println("SUCCESS: Got userId from request attribute (fallback): " + userId);
+                                }
+                            }
+                        } catch (Exception reqEx) {
+                            System.out.println("Could not get userId from request attribute: " + reqEx.getMessage());
+                        }
+                    }
+                }
+                
+                // If we have a userId (from param or authentication), return only stations assigned to that user
+                if (userId != null) {
+                    // Check if user has ALL_STATION permission - return all stations
+                    boolean hasAllStationPermission = false;
+                    try {
+                        if (authentication != null && authentication.isAuthenticated() &&
+                            authentication.getAuthorities() != null &&
+                            authentication.getAuthorities().stream().anyMatch((r) -> r.getAuthority().contains(ROLE_AUTH.ALL_STATION.name()))) {
+                            hasAllStationPermission = true;
+                        }
+                    } catch (Exception e) {
+                        // If error checking permissions, default to user's assigned stations
+                    }
+                    
+                    if (hasAllStationPermission) {
+                        stations = stationRepository.findAll();
+                        System.out.println("User has ALL_STATION permission, returning all stations: " + stations.size());
+                    } else {
+                        // Return only stations assigned to the user
+                        System.out.println("Querying stations for userId: " + userId);
+                        
+                        // Use UserStationRepo to get assignments (this query is known to work)
+                        List<UserStation> userStations = userStationRepo.findAllByUser(userId);
+                        System.out.println("UserStation records found for userId " + userId + ": " + userStations.size());
+                        
+                        if (userStations.isEmpty()) {
+                            System.out.println("WARNING: User " + userId + " has NO station assignments in UserStation table. User needs to be assigned stations via Profile component.");
+                            stations = new ArrayList<>();
+                        } else {
+                            // Extract unique stations from UserStation records
+                            stations = userStations.stream()
+                                    .map(us -> us.getStation())
+                                    .filter(station -> station != null)
+                                    .distinct()
+                                    .collect(java.util.stream.Collectors.toList());
+                            
+                            System.out.println("Extracted " + stations.size() + " unique stations from " + userStations.size() + " assignments");
+                            if (stations.isEmpty()) {
+                                System.out.println("WARNING: UserStation records exist but stations are null. Possible data inconsistency.");
+                            } else {
+                                System.out.println("Stations found: " + stations.stream().map(s -> s.getStation_id() + ":" + s.getStationName()).collect(java.util.stream.Collectors.joining(", ")));
+                            }
+                        }
+                    }
+                } else {
+                    // No userIdParam and no authenticated user - return empty list
+                    // User ID must be provided via token authentication or userId parameter
+                    stations = new ArrayList<>();
+                    System.out.println("==========================================");
+                    System.out.println("ERROR: No userId parameter and no authentication!");
+                    System.out.println("User ID is required but could not be extracted from token.");
+                    System.out.println("Possible causes:");
+                    System.out.println("  1. Token is expired or invalid");
+                    System.out.println("  2. Token is not being sent in Authorization header");
+                    System.out.println("  3. Token format is incorrect");
+                    System.out.println("SOLUTION: Ensure valid token is sent with Authorization: Bearer <token>");
+                    System.out.println("OR pass userId parameter: /station/getAll?userId=X");
+                    System.out.println("==========================================");
+                }
+            }
+            
+            // Transform stations to the expected format
             List<Map<String, Object>> transformedStations = stations.stream()
                     .map(station -> {
                         Map<String, Object> map = new HashMap<>();
                         map.put("id", station.getStation_id());
-                        map.put("name", station.getStationName());
+                        String stationName = station.getStationName();
+                        // Handle null or empty station names
+                        if (stationName == null || stationName.trim().isEmpty()) {
+                            stationName = "Station " + station.getStation_id(); // Fallback name
+                            System.out.println("WARNING: Station ID " + station.getStation_id() + " has no name, using fallback: " + stationName);
+                        }
+                        map.put("name", stationName);
+                        System.out.println("Station ID: " + station.getStation_id() + ", Name: " + stationName);
                         return map;
                     })
                     .toList();
+            
+            System.out.println("Transformed stations count: " + transformedStations.size());
+            
+            // Return array directly for frontend NgFor compatibility
             return ResponseEntity.ok(transformedStations);
+        } catch (Exception e) {
+            System.err.println("Error in getAllStations: " + e.getMessage());
+            e.printStackTrace();
+            // Return empty array on error for NgFor compatibility
+            return ResponseEntity.status(500).body(new ArrayList<>());
         }
-        
-        // Handle authenticated users with ALL_STATION permission
-        if (authentication.getAuthorities().stream().anyMatch((r) -> r.getAuthority().contains(ROLE_AUTH.ALL_STATION.name()))) {
-            List<Station> stations = stationRepository.findAll();
-            List<Map<String, Object>> transformedStations = stations.stream()
-                    .map(station -> {
-                        Map<String, Object> map = new HashMap<>();
-                        map.put("id", station.getStation_id());
-                        map.put("name", station.getStationName());
-                        return map;
-                    })
-                    .toList();
-            return ResponseEntity.ok(transformedStations);
-        } 
-        // Handle authenticated users with VIEW_STATION permission
-        else if (authentication.getAuthorities().stream().anyMatch((r) -> r.getAuthority().contains(ROLE_AUTH.VIEW_STATION.name()))) {
-            User user = userRepository1.findById(((UserDTO) authentication.getPrincipal()).getId()).get();
-            List<Station> stations =stationRepository.findAllByUserId(user.getId());
-            List<Map<String, Object>> transformedStations = stations.stream()
-                    .map(station -> {
-                        Map<String, Object> map = new HashMap<>();
-                        map.put("id", station.getStation_id());
-                        map.put("name", station.getStationName());
-                        return map;
-                    })
-                    .toList();
-            return ResponseEntity.ok(transformedStations);
-        }
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new CustomMessage("You don't have permission."));
     }
 
     public ResponseEntity<?> addUser(Long stationId, Long userId) {

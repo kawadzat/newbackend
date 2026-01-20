@@ -146,8 +146,18 @@ public class RolesPreRunner implements CommandLineRunner {
 
 
         String permissionSOFTWARE_DEVELOPER = ROLE_AUTH.READ_USER + "," +
+                ROLE_AUTH.UPDATE_USER + "," +
                 ROLE_AUTH.VIEW_ASSET + "," +
-                ROLE_AUTH.ALL_STATION;
+                ROLE_AUTH.VIEW_STATION + "," +
+                ROLE_AUTH.ALL_STATION + "," +
+                ROLE_AUTH.REQUEST_MOVE_ASSET + "," +
+                ROLE_AUTH.APPROVE_MOVE_ASSET + "," +
+                ROLE_AUTH.CREATE_STATION + "," +
+                ROLE_AUTH.ASSIGN_STATION + "," +
+                ROLE_AUTH.ASSIGN_ROLE + "," +
+                ROLE_AUTH.CREATE_PRODUCT + "," +
+                ROLE_AUTH.CREATE_PURCHASEREQUEST + "," +
+                ROLE_AUTH.CREATE_ASSET;
         updateRole(roles, AUTH_ROLE.SOFTWARE_DEVELOPER,permissionSOFTWARE_DEVELOPER );
 
 
@@ -182,10 +192,12 @@ public class RolesPreRunner implements CommandLineRunner {
 
         String permissionHEADADMIN = ROLE_AUTH.READ_USER + "," +
                 ROLE_AUTH.VIEW_ASSET + "," +
-                ROLE_AUTH.ALL_STATION;
+                ROLE_AUTH.ALL_STATION + "," +
+                ROLE_AUTH.ASSIGN_ROLE;
         updateRole(roles, AUTH_ROLE.HEADADMIN, permissionHEADADMIN);
         updateRole(roles, AUTH_ROLE.HEAD_IT, permissionHEADADMIN);
         updateRole(roles, AUTH_ROLE.DEPUTY_HEAD_IT, permissionHEADADMIN);
+        updateRole(roles, AUTH_ROLE.SOFTWARE_DEVELOPER, permissionHEADADMIN);
         String permissionDEPUTYHEADADMIN = ROLE_AUTH.READ_USER + "," +
                 ROLE_AUTH.VIEW_ASSET + "," +
                 ROLE_AUTH.ALL_STATION + "," +
@@ -214,8 +226,24 @@ public class RolesPreRunner implements CommandLineRunner {
         updateRole(roles, AUTH_ROLE.REGISTRAR, permissionRegistrar);
         updateRole(roles, AUTH_ROLE.DEPUTY_REGISTRAR, permissionRegistrar);
 
-        String permissionDataCenterEngineer = ROLE_AUTH.CREATE_LINE + "," +
-                ROLE_AUTH.VIEW_LINE;
+        String permissionDataProtectionOfficer = ROLE_AUTH.READ_USER + "," +
+                ROLE_AUTH.VIEW_ASSET + "," +
+                ROLE_AUTH.VIEW_STATION + "," +
+                ROLE_AUTH.ALL_STATION + "," +
+                ROLE_AUTH.CHECK_ASSET;
+        updateRole(roles, AUTH_ROLE.DATA_PROTECTION_OFFICER, permissionDataProtectionOfficer);
+
+        String permissionDataCenterEngineer = ROLE_AUTH.READ_USER + "," +
+                ROLE_AUTH.UPDATE_USER + "," +
+                ROLE_AUTH.VIEW_ASSET + "," +
+                ROLE_AUTH.VIEW_STATION + "," +
+                ROLE_AUTH.ALL_STATION + "," +
+                ROLE_AUTH.REQUEST_MOVE_ASSET + "," +
+                ROLE_AUTH.APPROVE_MOVE_ASSET + "," +
+                ROLE_AUTH.CREATE_STATION + "," +
+                ROLE_AUTH.ASSIGN_STATION + "," +
+                ROLE_AUTH.CREATE_ASSET + "," +
+                ROLE_AUTH.CHECK_ASSET;
         updateRole(roles, AUTH_ROLE.DATA_CENTER_ENGINEER, permissionDataCenterEngineer);
     }
 
